@@ -1,0 +1,12 @@
+div.node {
+    margin-left: 1em;
+    cursor: pointer;
+}
+
+div.node {
+    display: none;
+}
+
+div.top.node {
+    display: initial;
+}
