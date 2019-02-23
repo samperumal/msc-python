@@ -3,33 +3,36 @@ import numpy
 import uproot
 from string import Template
 
-inputFile = "alidata/000296934/18000296934019.100/AliESDs.root"
+inputFile = "alidata/AliESDs.root"
 outputFile = "python/treeOutput/test.html"
 rootfile = uproot.open(inputFile)
 
-def printNode(file, node):
-    for key in node.iterkeys():
-        child = node.get(key)
+def printNode(file, node, key, depth):
+    className = node._classname.decode('utf-8')
+    hasKeys = hasattr(node, "keys") and len(node.keys()) > 0
         
-        hasKeys = hasattr(child, "keys") and len(child.keys()) > 0
-        itemCount = 0
-        if hasattr(child, "array"): 
-            pass#itemCount = len(child.array())
-        className = node.get(key)._classname.decode('utf-8')
+    display = Template("($className)\n").substitute(className = className)
+    if isinstance(node, uproot.rootio.ROOTDirectory):
+        display = Template("$name [$compress compression] ($className)").substitute(name = node.name.decode("utf-8"), compress = node.compression.algoname, className = className)
+    elif isinstance(node, uproot.tree.TTreeMethods):
+        display = Template("$name - $title [$numentries entries] ($className)").substitute(name = node.name.decode("utf-8"), title = node.title.decode("utf-8"), numentries = node.numentries, className = className)
+    elif isinstance(node, uproot.tree.TBranchMethods):
+        numBytes = -1
+        try: numBytes = node.uncompressedbytes(None)
+        except: pass
+        display = Template("$name [$bytes bytes] ($className)").safe_substitute(name = node.name.decode("utf-8"), className = type(node).__name__, bytes = numBytes)
 
-        if str(key.decode('utf-8')).find("AliESD") >= 0:
-            print(className)
-        #dataJsTree = Template("{ ""type"": ""$classname"" }").substitute(classname = className)
+    file.write(Template("<li data-jstree='{ \"type\": \"$classname\", $open }'>").substitute(classname = className if hasKeys else "leaf", open = "\"opened\": \"true\"" if depth < 2 else ""))
+    file.write(display)
 
-        file.write(Template("<li class='node' data-jstree='{ \"type\": \"$classname\" }'>").substitute(classname = className if hasKeys else "leaf"))
-        file.write(Template("$name $array ($className)\n").substitute(name = key.decode('utf-8'), array = "[" + str(itemCount) + "]" if itemCount > 0 else "", className = className))
-        
-        if hasKeys:
+    if hasKeys:
+        for key, child in node.iteritems():
             file.write("<ul>\n")
-            printNode(file, child)
+            printNode(file, child, key, depth + 1)
             file.write("</ul>\n")
-        
-        file.write("</li>\n")
+
+    file.write("</li>\n")
+
 
 def printHeader(file):
     file.write("<head>\n")
@@ -46,7 +49,7 @@ def printBody(file):
     file.write(inputFile + "\n")
     file.write("<div id='treeContainer'>\n")
     file.write("<ul>\n")
-    printNode(file, rootfile)
+    printNode(file, rootfile, None, 0)
     file.write("</ul>\n")
     file.write("</div>\n")
     file.write("</div>\n")
