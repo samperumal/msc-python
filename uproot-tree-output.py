@@ -3,7 +3,7 @@ import numpy
 import uproot
 from string import Template
 
-inputFile = "alidata/AliESDs.root"
+inputFile = "alidata/000296934/18000296934019.100/AliESDs.root"#"alidata/AliESDs.root"
 outputFile = "python/treeOutput/test.html"
 rootfile = uproot.open(inputFile)
 
@@ -30,6 +30,16 @@ def printNode(file, node, key, depth):
             file.write("<ul>\n")
             printNode(file, child, key, depth + 1)
             file.write("</ul>\n")
+    elif hasattr(node, "lazyarray"):
+        try:
+            #for value in node.array():
+            arraylen = len(node.lazyarray())
+            if arraylen > 0:
+                file.write("<ul>\n")
+                file.write(Template("<li>Items: $val</li>").substitute(val = arraylen))
+                file.write("</ul>\n")
+        except:
+            pass
 
     file.write("</li>\n")
 
