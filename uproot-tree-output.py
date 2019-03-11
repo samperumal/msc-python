@@ -3,8 +3,8 @@ import numpy
 import uproot
 from string import Template
 
-inputFile = "alidata/000296934/18000296934019.100/AliESDs.root"#"alidata/AliESDs.root"
-outputFile = "python/treeOutput/test.html"
+inputFile = "/Dev/alice/alidata/000283987/AliESDs.root"#"alidata/AliESDs.root"
+outputFile = "/Dev/alice/python/treeOutput/test.html"
 rootfile = uproot.open(inputFile)
 
 def printNode(file, node, key, depth):
