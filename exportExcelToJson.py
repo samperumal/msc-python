@@ -6,7 +6,7 @@ def main(headersAddress, dataAddress):
     wb = load_workbook("jsroot/TRDDimensions.xlsx")
     ws = wb.active
     headers = [header.value for row in ws[headersAddress] for header in row ]
-    print(headers)
+    
     nestedData = [list(zip(headers, [d.value for d in row])) for row in ws[dataAddress]]
     data = []
     for row in nestedData:
@@ -23,4 +23,4 @@ def main(headersAddress, dataAddress):
     outfile.close()
 
 if __name__ == "__main__":
-    main("A3:M3", "A4:M33")
+    main("A3:O3", "A4:O33")
