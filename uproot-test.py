@@ -5,7 +5,7 @@ import uproot
 class AliESDRun:
     pass
 
-rootfile = uproot.open("alidata/AliESDs.root")#"alidata/000296934/18000296934019.100/AliESDs.root")
+rootfile = uproot.open("alidata/000294925/18000294925036.100/AliESDs.root")
 esd = rootfile["esdTree"]
 runs = esd["AliESDRun."]["AliESDRun.fBeamEnergy"].lazyarray()
 #a = esd["AliESDRun."]["AliESDRun.fBeamEnergy"]
