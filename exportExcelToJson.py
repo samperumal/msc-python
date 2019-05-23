@@ -15,7 +15,7 @@ def main(headersAddress, dataAddress):
             obj[pair[0]] = pair[1]
         data.append(obj)
 
-    outfile = open("jsroot/TrdDimensions.js", "w")
+    outfile = open("jsroot/components/trd-dimensions.js", "w")
     print("function getDimensions() { return ", file = outfile, end = '')
     json.dump(data, outfile, indent = 4)
     print(";\n}", file = outfile)
