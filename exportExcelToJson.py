@@ -9,7 +9,6 @@ def main(headersAddress, dataAddress):
     
     nestedData = [list(zip(headers, [d.value for d in row])) for row in ws[dataAddress]]
     data = []
-    padrows = []
     for row in nestedData:
         obj = {}
         for pair in row:
@@ -22,6 +21,7 @@ def main(headersAddress, dataAddress):
     print("\t;\n\n\treturn dims;\n}", file = outfile)
     outfile.close()
 
+    padrows = []
     for module in data:
         for row in range(16):
             used = row < module["zegments"]
@@ -45,9 +45,35 @@ def main(headersAddress, dataAddress):
 
     padrows.sort(key = lambda x: x["rid"])
 
+    modules = []
+    for module in data:
+        obj = {}
+        obj["rid"] = (module["stack"] * 6 + module["layer"]) * 16
+        obj["stk"] = module["stack"]
+        obj["lyr"] = module["layer"]
+        obj["row"] = row
+        obj["rows"] = module["zegments"]
+        obj["p0"] = {
+            "y": module["minR"],
+            "z": round(module["minZ"], 2)
+        }
+        obj["p1"] = {
+            "y": module["maxR"],
+            "z": round(module["maxZ"], 2)
+        }
+        modules.append(obj)
+
+    modules.sort(key = lambda x: x["rid"])
+
     outfile = open("jsroot/components/padrow-dimensions.js", "w")
     print("function getPadrowDimensions() {\nconst dims = ", file = outfile, end = '')
     json.dump(padrows, outfile, indent = 4)
+    print(";\n\n\treturn dims;\n}", file = outfile)
+    
+    print("\n\n")
+
+    print("function getModuleDimensions() {\nconst dims = ", file = outfile, end = '')
+    json.dump(modules, outfile, indent = 4)
     print(";\n\n\treturn dims;\n}", file = outfile)
     outfile.close()
 
