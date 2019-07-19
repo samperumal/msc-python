@@ -1,6 +1,7 @@
 from openpyxl import load_workbook;
 import os;
 import json;
+import math;
 
 def main(headersAddress, dataAddress):
     wb = load_workbook("jsroot/TRDDimensions.xlsx")
@@ -34,36 +35,64 @@ def main(headersAddress, dataAddress):
                 obj["row"] = row
                 obj["rows"] = module["zegments"]
                 obj["p0"] = {
-                    "y": module["minR"],
+                    "r": module["minR"],
                     "z": round(module["minZ"] + row * module["zsize"], 2)
                 }
                 obj["p1"] = {
-                    "y": module["maxR"],
+                    "r": module["maxR"],
                     "z": round(module["minZ"] + (row + 1) * module["zsize"], 2)
                 }
             padrows.append(obj)
 
     padrows.sort(key = lambda x: x["rid"])
 
+    stacks = {}
+    for stack in range(5):
+        stacks[stack] = {
+            'minZ': math.inf,
+            'maxZ': -math.inf,
+            'minR': math.inf,
+            'maxR': -math.inf
+        }
+
     modules = []
     for module in data:
         obj = {}
         obj["rid"] = (module["stack"] * 6 + module["layer"]) * 16
         obj["stk"] = module["stack"]
+
         obj["lyr"] = module["layer"]
         obj["row"] = row
         obj["rows"] = module["zegments"]
         obj["p0"] = {
-            "y": module["minR"],
+            "r": module["minR"],
             "z": round(module["minZ"], 2)
         }
         obj["p1"] = {
-            "y": module["maxR"],
+            "r": module["maxR"],
             "z": round(module["maxZ"], 2)
         }
+
         modules.append(obj)
 
+        stack = stacks[module["stack"]]
+        stack["minZ"] = round(min(stack["minZ"], module["minZ"]), 2)
+        stack["maxZ"] = round(max(stack["maxZ"], module["maxZ"]), 2)
+        stack["minR"] = round(min(stack["minR"], module["minR"]), 2)
+        stack["maxR"] = round(max(stack["maxR"], module["maxR"]), 2)
+
     modules.sort(key = lambda x: x["rid"])
+
+    for stack in stacks.values():
+        zrange = stack["maxZ"] - stack["minZ"]
+        rrange = stack["maxR"] - stack["minR"]
+        dimrange = max(zrange, rrange)
+        
+        midZ = (stack["maxZ"] + stack["minZ"]) / 2
+        stack["bbZ"] = [midZ - dimrange / 2, midZ + dimrange / 2]
+        
+        midR = (stack["maxR"] + stack["minR"]) / 2
+        stack["bbR"] = [midR + dimrange / 2, midR - dimrange / 2]
 
     outfile = open("jsroot/components/padrow-dimensions.js", "w")
     print("function getPadrowDimensions() {\nconst dims = ", file = outfile, end = '')
@@ -75,6 +104,13 @@ def main(headersAddress, dataAddress):
     print("function getModuleDimensions() {\nconst dims = ", file = outfile, end = '')
     json.dump(modules, outfile, indent = 4)
     print(";\n\n\treturn dims;\n}", file = outfile)
+
+    print("\n\n")
+
+    print("function getStackDimensions() {\nconst dims = ", file = outfile, end = '')
+    json.dump(stacks, outfile, indent = 4)
+    print(";\n\n\treturn dims;\n}", file = outfile)
+
     outfile.close()
 
 if __name__ == "__main__":
