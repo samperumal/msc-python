@@ -55,6 +55,8 @@ def main(headersAddress, dataAddress):
             'maxR': -math.inf
         }
 
+    rangeX = 0
+
     modules = []
     for module in data:
         obj = {}
@@ -65,15 +67,21 @@ def main(headersAddress, dataAddress):
         obj["row"] = row
         obj["rows"] = module["zegments"]
         obj["p0"] = {
+            "x": module["minLocalY"],
+            "y": module["minR"],
             "r": module["minR"],
             "z": round(module["minZ"], 2)
         }
         obj["p1"] = {
+            "x": module["maxLocalY"],
+            "y": module["maxR"],
             "r": module["maxR"],
             "z": round(module["maxZ"], 2)
         }
 
         modules.append(obj)
+
+        rangeX = max(rangeX, module["maxLocalY"] - module["minLocalY"])
 
         stack = stacks[module["stack"]]
         stack["minZ"] = round(min(stack["minZ"], module["minZ"]), 2)
@@ -83,16 +91,29 @@ def main(headersAddress, dataAddress):
 
     modules.sort(key = lambda x: x["rid"])
 
+    rangeY = 0
+
     for stack in stacks.values():
-        zrange = stack["maxZ"] - stack["minZ"]
-        rrange = stack["maxR"] - stack["minR"]
-        dimrange = max(zrange, rrange)
+        rangeZ = stack["maxZ"] - stack["minZ"]
+        rangeR = stack["maxR"] - stack["minR"]
+
+        dimSupermoduleRange = max(rangeZ, rangeR)
+        rangeY = min(dimSupermoduleRange, rangeY)
         
         midZ = (stack["maxZ"] + stack["minZ"]) / 2
-        stack["bbZ"] = [midZ - dimrange / 2, midZ + dimrange / 2]
+        stack["bbZ"] = [midZ - dimSupermoduleRange / 2, midZ + dimSupermoduleRange / 2]
         
         midR = (stack["maxR"] + stack["minR"]) / 2
-        stack["bbR"] = [midR + dimrange / 2, midR - dimrange / 2]
+        stack["bbR"] = [midR + dimSupermoduleRange / 2, midR - dimSupermoduleRange / 2]
+
+    
+    sectorRange = max(rangeX, rangeY)
+    sectorBB = {}
+    
+    sectorBB["bbX"] = [-sectorRange / 2, +sectorRange / 2]
+
+    midY = (stacks[2]["maxR"] + stacks[2]["minR"]) / 2
+    sectorBB["bbY"] = [midY + sectorRange / 2, midY - sectorRange / 2]
 
     outfile = open("jsroot/components/padrow-dimensions.js", "w")
     print("function getPadrowDimensions() {\nconst dims = ", file = outfile, end = '')
@@ -111,6 +132,12 @@ def main(headersAddress, dataAddress):
     json.dump(stacks, outfile, indent = 4)
     print(";\n\n\treturn dims;\n}", file = outfile)
 
+    print("\n\n")
+
+    print("function getSectorDimensions() {\nconst dims = ", file = outfile, end = '')
+    json.dump(sectorBB, outfile, indent = 4)
+    print(";\n\n\treturn dims;\n}", file = outfile)
+        
     outfile.close()
 
 if __name__ == "__main__":
