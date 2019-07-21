@@ -113,8 +113,13 @@ def outputJsonToFile(data, path):
     json.dump(data, outfile, indent=4)
     outfile.close()
 
+def outputJsonAsFunctionToFile(data, outfile, functionName):
+    print("function " + functionName + "() { const dims = ", file = outfile, end = '')
+    json.dump(data, outfile, indent = 4)
+    print(";\n\n\treturn dims;\n}\n", file = outfile)
 
-def rotate(point, angle, origin=[0, 0]):
+
+def rotate(point, degangle, origin=[0, 0]):
     """
     Rotate a point counterclockwise by a given angle around a given origin.
 
@@ -123,17 +128,21 @@ def rotate(point, angle, origin=[0, 0]):
     ox, oy = origin
     px, py = point
 
-    angle = angle / 180 * math.pi
+    angle = degangle / 180 * math.pi
 
     qx = ox + math.cos(angle) * (px - ox) - math.sin(angle) * (py - oy)
     qy = oy + math.sin(angle) * (px - ox) + math.cos(angle) * (py - oy)
-    return round(qx, 2), round(qy, 2)
+
+    return {
+        "x": round(qx, 2), 
+        "y": round(qy, 2)
+    }
 
 
 def createSectorModules(supermodule):
     sectors = []
     for sectorNumber in range(18):
-        rotation = -10 - (20 * sectorNumber)
+        rotation = 10 + (20 * sectorNumber)
         for layerArray in supermodule:
             for module in layerArray:
                 if (module["stack"] != 2):
@@ -141,33 +150,18 @@ def createSectorModules(supermodule):
 
                 x0 = module["Rmin"]
                 x1 = module["Rmax"]
-                y0 = module["w0"]
-                y1 = module["w1"]
-
-                x0r, y0r = rotate([x0, y0], rotation)
-                x1r, y1r = rotate([x1, y1], rotation)
+                y0 = module["w0"] / 10
+                y1 = module["w1"] / 10
 
                 sector = {
                     "sec": sectorNumber,
                     "lyr": module["layer"],
                     # Projected coordinates in clockwise-order
                     "d": [
-                        {
-                            "x": x0r,
-                            "y": y0r,
-                        },
-                        {
-                            "x": x0r,
-                            "y": y1r,
-                        },
-                        {
-                            "x": x1r,
-                            "y": y1r,
-                        },
-                        {
-                            "x": x1r,
-                            "y": y0r,
-                        }
+                        rotate([x0, y0], rotation),
+                        rotate([x0, y1], rotation),
+                        rotate([x1, y1], rotation),
+                        rotate([x1, y0], rotation),
                     ]
                 }
 
@@ -183,8 +177,10 @@ if __name__ == "__main__":
     supermodule = createSupermoduleStackLayers(data, False)
     supermodulePads = createSupermoduleStackLayers(data, True)
 
-    outputJsonToFile(createSectorModules(supermodule),
-                     "jsroot/geometry/sector-xy-plane.json")
+
+    outfile = open("jsroot/geometry/geometries.js", "w")
+    outputJsonAsFunctionToFile(createSectorModules(supermodule), outfile, "geomSectorXYPlane")
+    outfile.close()
 
     #outputJsonToFile(supermodule, "jsroot/geometry/supermodule.json")
     #outputJsonToFile(supermodulePads, "jsroot/geometry/supermodule-pads.json")
