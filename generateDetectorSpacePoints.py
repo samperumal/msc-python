@@ -289,6 +289,21 @@ def geomStackZRPlane(supermodulePads):
 
     return modules, pads
 
+def geomSectorXYPlaneTPC():
+    outerPath = [rotate([0, 250], angle) for angle in range(0, 370, 10)]
+    innerPath = [rotate([0, 85], angle) for angle in range(360, -10, -10)]
+
+    return [outerPath, innerPath]
+
+def geomSectorZRPlaneTPC():
+    return [
+        rotate([-250, 250], 0),
+        rotate([250, 250], 0),
+        rotate([250, 85], 0),
+        rotate([-250, 85], 0),
+        rotate([-250, 250], 0)
+    ]
+
 def generate():
     data = loadDictionaryRowsFromWorkbook(
         "jsroot/PadPlaneDimensions.xlsx", "A1:M1", "A2:M13")
@@ -310,7 +325,10 @@ def generate():
     modules, pads = geomStackZRPlane(supermodulePads)
     outputJsonAsFunctionToFile(modules, outfile, "geomStackZRPlaneModules")
     outputJsonAsFunctionToFile(pads, outfile, "geomStackZRPlanePads")
-    
+
+    outputJsonAsFunctionToFile(geomSectorXYPlaneTPC(), outfile, "geomSectorXYPlaneTPC")
+    outputJsonAsFunctionToFile(geomSectorZRPlaneTPC(), outfile, "geomSectorZRPlaneTPC")
+
     outfile.close()
 
     #outputJsonToFile(supermodule, "jsroot/geometry/supermodule.json")
