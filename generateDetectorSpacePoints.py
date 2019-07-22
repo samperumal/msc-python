@@ -223,20 +223,98 @@ def geomSectorXYPlaneZoom(supermodule):
 
     return modules, pads
 
-if __name__ == "__main__":
+def rid(stk, lyr, row):
+   return (stk * 6 + lyr) * 16 + row
+
+def geomStackZRPlane(supermodulePads):
+    modules = []
+    pads = []
+    rotation = 0
+
+    for layerArray in supermodulePads:
+        for module in layerArray:
+            y0 = module["Rmin"]
+            y1 = module["Rmax"]
+
+            x0 = module["l0"] / 10
+            x1 = module["l1"] / 10
+
+            moduleGeom = {
+                "stk": module["stack"],
+                "lyr": module["layer"],
+                # Projected coordinates in clockwise-order
+                "d": [
+                    rotate([x0, y0], rotation),
+                    rotate([x0, y1], rotation),
+                    rotate([x1, y1], rotation),
+                    rotate([x1, y0], rotation)
+                ]
+            }
+
+            modules.append(moduleGeom)
+
+            for pad in module["pads"]:
+                if (pad["col"] != 1): continue
+
+                px0 = pad["l0"] / 10
+                px1 = pad["l1"] / 10
+                padgeom = {
+                    "rid": rid(module["stack"], module["layer"], pad["row"]),
+                    "s": module["stack"],
+                    "l": module["layer"],
+                    "r": pad["row"],
+                    "d": [
+                        rotate([px0, y0], rotation),
+                        rotate([px0, y1], rotation),
+                        rotate([px1, y1], rotation),
+                        rotate([px1, y0], rotation)
+                    ]
+                }
+
+                pads.append(padgeom)
+
+            # Create dummy entries for stacks with only 12 rather than 16 rows
+            if (module["rows"] == 12):
+                for i in range(4):
+                    pads.append({
+                        "rid": rid(module["stack"], module["layer"], 12 + i),
+                        "s": module["stack"],
+                        "l": module["layer"],
+                        "r": pad["row"],
+                        "d": []
+                    })
+
+    modules.sort(key = lambda x: x["stk"] * 10 + x["lyr"])
+    pads.sort(key = lambda x: x["rid"])
+
+    return modules, pads
+
+def generate():
     data = loadDictionaryRowsFromWorkbook(
         "jsroot/PadPlaneDimensions.xlsx", "A1:M1", "A2:M13")
 
     supermodule = createSupermoduleStackLayers(data, False)
     supermodulePads = createSupermoduleStackLayers(data, True)
 
+    # outputJsonToFile(createSectorModules(supermodule),
+    #                  "jsroot/geometry/sector-xy-plane.json")
 
     outfile = open("jsroot/geometry/geometries.js", "w")
+
     outputJsonAsFunctionToFile(geomSectorXYPlane(supermodule), outfile, "geomSectorXYPlane")
+
     modules, pads = geomSectorXYPlaneZoom(supermodulePads)
     outputJsonAsFunctionToFile(modules, outfile, "geomZoomSectorXYPlaneModules")
     outputJsonAsFunctionToFile(pads, outfile, "geomZoomSectorXYPlanePads")
+
+    modules, pads = geomStackZRPlane(supermodulePads)
+    outputJsonAsFunctionToFile(modules, outfile, "geomStackZRPlaneModules")
+    outputJsonAsFunctionToFile(pads, outfile, "geomStackZRPlanePads")
+    
     outfile.close()
 
     #outputJsonToFile(supermodule, "jsroot/geometry/supermodule.json")
     #outputJsonToFile(supermodulePads, "jsroot/geometry/supermodule-pads.json")
+
+if __name__ == "__main__":
+    generate()
