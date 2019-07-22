@@ -150,8 +150,10 @@ def createSectorModules(supermodule):
 
                 x0 = module["Rmin"]
                 x1 = module["Rmax"]
+
                 y0 = module["w0"] / 10
                 y1 = module["w1"] / 10
+                ym = (y0 + y1) / 2
 
                 sector = {
                     "sec": sectorNumber,
@@ -159,9 +161,12 @@ def createSectorModules(supermodule):
                     # Projected coordinates in clockwise-order
                     "d": [
                         rotate([x0, y0], rotation),
+                        rotate([x0, ym], rotation),
+                        rotate([x1, ym], rotation),
+                        rotate([x0, ym], rotation),
                         rotate([x0, y1], rotation),
                         rotate([x1, y1], rotation),
-                        rotate([x1, y0], rotation),
+                        rotate([x1, y0], rotation)
                     ]
                 }
 
