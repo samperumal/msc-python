@@ -139,7 +139,7 @@ def rotate(point, degangle, origin=[0, 0]):
     }
 
 
-def createSectorModules(supermodule):
+def geomSectorXYPlane(supermodule):
     sectors = []
     for sectorNumber in range(18):
         rotation = 10 + (20 * sectorNumber)
@@ -174,6 +174,54 @@ def createSectorModules(supermodule):
 
     return sectors
 
+def geomSectorXYPlaneZoom(supermodule):
+    modules = []
+    pads = []
+    rotation = 90
+    for layerArray in supermodule:
+        for module in layerArray:
+            if (module["stack"] != 2):
+                continue
+
+            x0 = module["Rmin"]
+            x1 = module["Rmax"]
+
+            y0 = module["w0"] / 10
+            y1 = module["w1"] / 10
+
+            sector = {
+                "lyr": module["layer"],
+                # Projected coordinates in clockwise-order
+                "d": [
+                    rotate([x0, y0], rotation),
+                    rotate([x0, y1], rotation),
+                    rotate([x1, y1], rotation),
+                    rotate([x1, y0], rotation)
+                ]
+            }
+
+            modules.append(sector)
+
+            for pad in module["pads"]:
+                if (pad["row"] != 1): continue
+
+                py0 = pad["w0"] / 10
+                py1 = pad["w1"] / 10
+                padgeom = {
+                    "l": module["layer"],
+                    "c": pad["col"],
+                    "d": [
+                        rotate([x0, py0], rotation),
+                        rotate([x0, py1], rotation),
+                        rotate([x1, py1], rotation),
+                        rotate([x1, py0], rotation)
+                    ]
+                }
+
+                pads.append(padgeom)
+                
+
+    return modules, pads
 
 if __name__ == "__main__":
     data = loadDictionaryRowsFromWorkbook(
@@ -184,7 +232,10 @@ if __name__ == "__main__":
 
 
     outfile = open("jsroot/geometry/geometries.js", "w")
-    outputJsonAsFunctionToFile(createSectorModules(supermodule), outfile, "geomSectorXYPlane")
+    outputJsonAsFunctionToFile(geomSectorXYPlane(supermodule), outfile, "geomSectorXYPlane")
+    modules, pads = geomSectorXYPlaneZoom(supermodulePads)
+    outputJsonAsFunctionToFile(modules, outfile, "geomZoomSectorXYPlaneModules")
+    outputJsonAsFunctionToFile(pads, outfile, "geomZoomSectorXYPlanePads")
     outfile.close()
 
     #outputJsonToFile(supermodule, "jsroot/geometry/supermodule.json")
