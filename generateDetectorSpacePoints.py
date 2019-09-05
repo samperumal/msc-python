@@ -304,6 +304,42 @@ def geomSectorZRPlaneTPC():
         rotate([-250, 250], 0)
     ]
 
+def geomLayers3D(supermodule):
+    layers = []
+    for sectorNumber in range(18):
+        rotation = 10 + (20 * sectorNumber)
+        for layerArray in supermodule:
+            for module in layerArray:
+
+                x0 = module["Rmin"]
+                x1 = module["Rmax"]
+
+                y0 = module["w0"] / 10
+                y1 = module["w1"] / 10
+                ym = (y0 + y1) / 2
+
+                z0 = module["l0"] / 10
+                z1 = module["l1"] / 10
+
+                sector = {
+                    "sec": sectorNumber,
+                    "stk": module["stack"],
+                    "lyr": module["layer"],
+                    "rot": 20 * sectorNumber,
+
+                    "w": abs(x1 - x0),
+                    "h": abs(y1 - y0),
+                    "d": abs(z1 - z0),
+
+                    "x": (x0 + x1) / 2,
+                    "y": (y0 + y1) / 2,
+                    "z": (z0 + z1) / 2,
+                }
+
+                layers.append(sector)
+
+    return layers
+
 def generate():
     data = loadDictionaryRowsFromWorkbook(
         "jsroot/PadPlaneDimensions.xlsx", "A1:M1", "A2:M13")
@@ -328,6 +364,14 @@ def generate():
 
     outputJsonAsFunctionToFile(geomSectorXYPlaneTPC(), outfile, "geomSectorXYPlaneTPC")
     outputJsonAsFunctionToFile(geomSectorZRPlaneTPC(), outfile, "geomSectorZRPlaneTPC")
+
+    outfile.close()
+
+    outfile = open("jsroot/geometry/geometries3d.js", "w")
+
+    outputJsonAsFunctionToFile(geomLayers3D(supermodule), outfile, "geomLayers3D")
+
+    print("export { geomLayers3D };", file = outfile)
 
     outfile.close()
 
