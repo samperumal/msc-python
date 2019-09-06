@@ -325,7 +325,7 @@ def geomLayers3D(supermodule):
                     "sec": sectorNumber,
                     "stk": module["stack"],
                     "lyr": module["layer"],
-                    "rot": 20 * sectorNumber,
+                    "rot": 10 + 20 * sectorNumber,
 
                     "w": abs(x1 - x0),
                     "h": abs(y1 - y0),
@@ -333,7 +333,7 @@ def geomLayers3D(supermodule):
 
                     "x": (x0 + x1) / 2,
                     "y": (y0 + y1) / 2,
-                    "z": (z0 + z1) / 2,
+                    "z": -(z0 + z1) / 2,
                 }
 
                 layers.append(sector)
